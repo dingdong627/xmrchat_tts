@@ -8,8 +8,8 @@ SEEN_IDS_FILE="/tmp/xmrchat_seen_ids"
 MIN_DONATION_DOLLARCENTS=490
 
 # Seed seen IDs with all currently existing tips so we don't read them out on startup
-# echo "Seeding existing tip IDs..."
-# curl -s "$URL" | jq -r '.[].id' > "$SEEN_IDS_FILE"
+echo "Seeding existing tip IDs..."
+curl -s "$URL" | jq -r '.[].id' > "$SEEN_IDS_FILE"
 echo "Done. Watching for new tips..."
 
 PRICECALL_COUNTER=$PRICECALL_SKIPS
@@ -48,21 +48,21 @@ while true; do
         message=$(echo "$entry" | jq -r '.message // ""')
 
         # # Skip if already seen or message is empty
-        # if grep -qx "$id" "$SEEN_IDS_FILE" || [ -z "$message" ]; then
-        #     echo "$id" >> "$SEEN_IDS_FILE"
-        #     continue
-        # fi
+        if grep -qx "$id" "$SEEN_IDS_FILE" || [ -z "$message" ]; then
+            echo "$id" >> "$SEEN_IDS_FILE"
+            continue
+        fi
 
         echo "New tip from $name (ID $id): $message"
         if [[ $dollar_cents -ge $MIN_DONATION_DOLLARCENTS ]]; then
             echo "$name says: $message" | espeak 2>&1
         fi
 
-        # echo "$id" >> "$SEEN_IDS_FILE"
+        echo "$id" >> "$SEEN_IDS_FILE"
     done
 
     # Deduplicate the seen IDs file occasionally to keep it tidy
-    # sort -u "$SEEN_IDS_FILE" -o "$SEEN_IDS_FILE"
+    sort -u "$SEEN_IDS_FILE" -o "$SEEN_IDS_FILE"
 
     PRICECALL_COUNTER=$((PRICECALL_COUNTER + 1))
     sleep "$POLL_INTERVAL"
